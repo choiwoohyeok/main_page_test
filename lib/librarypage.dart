@@ -13,6 +13,8 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  String apiKeyInfoNaru =
+      'bd3254f61ba3ad0901c3df6e543a19b07cd4e2656d4b7c8f2e0f59ce59895fcc';
   NaverMapController? _controller;
   Position? _currentPosition;
   bool _isSdkInitialized = false; // SDK 초기화 상태 체크
@@ -22,6 +24,33 @@ class _LibraryPageState extends State<LibraryPage> {
     target: NLatLng(37.5666102, 126.9783881), // 임시 기본 위치: 서울
     zoom: 15,
   );
+  final Map<String, String> _regionCodes = {
+    '서울특별시 종로구': '11010',
+    '서울특별시 중구': '11020',
+    '서울특별시 용산구': '11030',
+    '서울특별시 성동구': '11040',
+    '서울특별시 광진구': '11050',
+    '서울특별시 동대문구': '11060',
+    '서울특별시 중랑구': '11070',
+    '서울특별시 성북구': '11080',
+    '서울특별시 강북구': '11090',
+    '서울특별시 도봉구': '11100',
+    '서울특별시 노원구': '11110',
+    '서울특별시 은평구': '11120',
+    '서울특별시 서대문구': '11130',
+    '서울특별시 마포구': '11140',
+    '서울특별시 양천구': '11150',
+    '서울특별시 강서구': '11160',
+    '서울특별시 구로구': '11170',
+    '서울특별시 금천구': '11180',
+    '서울특별시 영등포구': '11190',
+    '서울특별시 동작구': '11200',
+    '서울특별시 관악구': '11210',
+    '서울특별시 서초구': '11220',
+    '서울특별시 강남구': '11230',
+    '서울특별시 송파구': '11240',
+    '서울특별시 강동구': '11250',
+  };
 
   @override
   void initState() {
@@ -34,7 +63,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Future<void> _initializeSdk() async {
     try {
       await NaverMapSdk.instance.initialize(
-        clientId: 'eoa0ax20f', // 네이버 클라우드 플랫폼 클라이언트 ID
+        clientId: 'eoa0ax20f1', // 네이버 클라우드 플랫폼 클라이언트 ID
       );
       setState(() {
         _isSdkInitialized = true;
@@ -104,10 +133,9 @@ class _LibraryPageState extends State<LibraryPage> {
         final results = data['results'][0]['region'];
         final String area1Name = results['area1']['name'];
         final String area2Name = results['area2']['name'];
-        final String area3Name = results['area3']['name'];
 
         setState(() {
-          address = '$area1Name $area2Name $area3Name';
+          address = '$area1Name $area2Name';
         });
         print('확인된 주소: $address');
       } else {
@@ -119,6 +147,7 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Future<void> _fetchLibraries(String addr) async {
+    // 도서나루 api로 수정해야됨.
     String apiUrl =
         'https://openapi.naver.com/v1/search/local.json?query=$addr 도서관&display=10&start=1&sort=random';
     try {

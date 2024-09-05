@@ -3,16 +3,8 @@ import 'package:flutter/material.dart';
 import 'homepage.dart';
 import 'librarypage.dart';
 import 'searchpage.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 네이버 맵 SDK 초기화
-  await NaverMapSdk.instance.initialize(
-    clientId: 'eoa0ax20f1', // 네이버 클라우드 플랫폼 클라이언트 ID
-  );
-
+void main() {
   runApp(const MyApp());
 }
 

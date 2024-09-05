@@ -17,25 +17,33 @@ class _SearchPageState extends State<SearchPage> {
   List<dynamic> _books = [];
   String _hasBook = '';
   String _loanAvailable = '';
-  String _selectedRegion = '11'; // 기본값: 서울특별시
+  String _selectedRegion = '11010'; // 기본값: 서울특별시 종로구
   final Map<String, String> _regionCodes = {
-    '서울특별시': '11',
-    '부산광역시': '21',
-    '대구광역시': '22',
-    '인천광역시': '23',
-    '광주광역시': '24',
-    '대전광역시': '25',
-    '울산광역시': '26',
-    '세종특별자치시': '29',
-    '경기도': '31',
-    '강원도': '32',
-    '충청북도': '33',
-    '충청남도': '34',
-    '전라북도': '35',
-    '전라남도': '36',
-    '경상북도': '37',
-    '경상남도': '38',
-    '제주특별자치도': '39',
+    '서울특별시 종로구': '11010',
+    '서울특별시 중구': '11020',
+    '서울특별시 용산구': '11030',
+    '서울특별시 성동구': '11040',
+    '서울특별시 광진구': '11050',
+    '서울특별시 동대문구': '11060',
+    '서울특별시 중랑구': '11070',
+    '서울특별시 성북구': '11080',
+    '서울특별시 강북구': '11090',
+    '서울특별시 도봉구': '11100',
+    '서울특별시 노원구': '11110',
+    '서울특별시 은평구': '11120',
+    '서울특별시 서대문구': '11130',
+    '서울특별시 마포구': '11140',
+    '서울특별시 양천구': '11150',
+    '서울특별시 강서구': '11160',
+    '서울특별시 구로구': '11170',
+    '서울특별시 금천구': '11180',
+    '서울특별시 영등포구': '11190',
+    '서울특별시 동작구': '11200',
+    '서울특별시 관악구': '11210',
+    '서울특별시 서초구': '11220',
+    '서울특별시 강남구': '11230',
+    '서울특별시 송파구': '11240',
+    '서울특별시 강동구': '11250',
   };
 
   // 도서 검색 함수
@@ -67,7 +75,7 @@ class _SearchPageState extends State<SearchPage> {
   //도서 소장 도서관 목록 반환 함수
   Future<void> _fetchLibraryInfo(String isbn) async {
     String apiUrl =
-        'http://data4library.kr/api/libSrchByBook?authKey=$apiKeyInfoNaru&isbn=$isbn&region=$_selectedRegion&format=json';
+        'http://data4library.kr/api/libSrchByBook?authKey=$apiKeyInfoNaru&isbn=$isbn&region=11&dtl_region=$_selectedRegion&format=json';
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
