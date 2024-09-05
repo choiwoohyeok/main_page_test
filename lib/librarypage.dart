@@ -157,7 +157,6 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Future<void> _fetchLibraries(String addr) async {
-    // 도서나루 api로 수정해야됨.
     String apiUrl =
         'http://data4library.kr/api/libSrch?authKey=$apiKeyInfoNaru&region=11&dtl_region=$regionCode&pageSize=30&format=json';
     try {

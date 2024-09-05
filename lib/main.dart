@@ -33,10 +33,10 @@ class MyHomePage extends StatefulWidget {
 class MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
 
-  static final List<Widget> _widgetOptions = <Widget>[
-    const HomePage(), // home_page.dart에서 가져옴
-    const SearchPage(), // search_page.dart에서 가져옴
-    const LibraryPage(), // profile_page.dart에서 가져옴
+  static const List<Widget> _pages = <Widget>[
+    HomePage(), // home_page.dart에서 가져옴
+    SearchPage(), // search_page.dart에서 가져옴
+    LibraryPage(), // profile_page.dart에서 가져옴
   ];
 
   void _onItemTapped(int index) {
@@ -89,9 +89,7 @@ class MyHomePageState extends State<MyHomePage> {
           ),
         ],
       )), */
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
