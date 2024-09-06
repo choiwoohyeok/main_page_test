@@ -4,7 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+
+class LibraryInfo {
+  final String name;
+  final String address;
+  final String url;
+  final String tel;
+
+  LibraryInfo(this.name, this.address, this.url, this.tel);
+}
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -26,6 +35,8 @@ class _LibraryPageState extends State<LibraryPage> {
   bool _isMapReady = false; // 맵 초기화 상태 체크
   String address = ''; // 주소 정보
   String regionCode = ''; //지역코드
+  Map<NLatLng, List<LibraryInfo>> libraryInfoMap = {};
+  Set<String> addedMarkers = {}; // 추가된 마커를 추적하기 위한 Set
   final Map<String, String> _regionCodes = {
     '서울특별시 종로구': '11010',
     '서울특별시 중구': '11020',
@@ -104,14 +115,14 @@ class _LibraryPageState extends State<LibraryPage> {
 
       // 위치 정보를 사용하여 마커 추가 시도
       if (_isMapReady && _currentPosition != null) {
-        _addCurrentLocationMarker(position.latitude, position.longitude);
+        addCurrentLocationMarker(position.latitude, position.longitude);
       }
 
       await _reverseGeolocation(position.latitude, position.longitude);
       await _fetchLibraries(address);
 
       if (_controller != null) {
-        _moveToCurrentLocation();
+        moveToCurrentLocation();
       }
     } catch (e) {
       print('Error getting location: $e');
@@ -168,33 +179,48 @@ class _LibraryPageState extends State<LibraryPage> {
 
         if (!mounted) return;
 
-        for (var library in libraries) {
+        for (int i = 0; i < libraries.length; i++) {
           // 각 도서관의 정보 추출
-          final String name = library['lib']['libName']; // 도서관 이름
+          final String name = libraries[i]['lib']['libName']; // 도서관 이름
           final double latitude =
-              double.parse(library['lib']['latitude']); // 위도
+              double.parse(libraries[i]['lib']['latitude']); // 위도
           final double longitude =
-              double.parse(library['lib']['longitude']); // 경도
-          final String libURL = library['lib']['homepage']; // 홈페이지 URL
-          final String libraryAddress = library['lib']['address']; // 도서관 주소
-          final String libtel = library['lib']['tel']; // 전화번호
+              double.parse(libraries[i]['lib']['longitude']); // 경도
+          final String libURL = libraries[i]['lib']['homepage']; // 홈페이지 URL
+          final String libraryAddress =
+              libraries[i]['lib']['address']; // 도서관 주소
+          final String libtel = libraries[i]['lib']['tel']; // 전화번호
 
-          // 마커 생성
-          final marker = NMarker(
-            id: libURL,
-            position: NLatLng(latitude, longitude),
-          );
+          final position = NLatLng(latitude, longitude);
+          final libraryInfo = LibraryInfo(name, libraryAddress, libURL, libtel);
 
-          // 마커를 맵에 추가
-          _controller?.addOverlay(marker);
+          // 중복된 도서관 정보 추가 방지
+          if (!libraryInfoMap.containsKey(position)) {
+            libraryInfoMap[position] = [libraryInfo];
+          } else {
+            // 기존에 존재하는 도서관 리스트에 중복 추가 방지
+            if (!libraryInfoMap[position]!.any((info) => info.name == name)) {
+              libraryInfoMap[position]!.add(libraryInfo);
+            }
+          }
 
-          // 마커가 맵에 추가되었는지 로그로 확인
-          print('마커 추가됨: $name at ($latitude, $longitude)');
+          // 마커 추가 여부 확인
+          if (!addedMarkers.contains('$latitude,$longitude')) {
+            // 마커 생성
+            final marker = NMarker(
+              id: '$name-$i', // 고유한 ID 설정
+              position: position,
+            );
 
-          // 마커 클릭 리스너 설정
-          marker.setOnTapListener((NMarker tappedMarker) {
-            _showLibraryInfo(name, libraryAddress, libURL, libtel);
-          });
+            _controller?.addOverlay(marker);
+
+            marker.setOnTapListener((NMarker tappedMarker) {
+              showLibraryInfo(position);
+            });
+
+            addedMarkers.add('$latitude,$longitude'); // 추가된 마커 위치 저장
+            print('마커 추가됨: $name, $libURL at ($latitude, $longitude)');
+          }
         }
       } else {
         print('도서관 데이터 로드 실패: ${response.statusCode}');
@@ -204,22 +230,22 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
-  void _onMapReady(NaverMapController controller) {
+  void onMapReady(NaverMapController controller) {
     setState(() {
       _controller = controller;
       _isMapReady = true; // 맵이 준비되었음을 설정
     });
 
     if (_currentPosition != null) {
-      _moveToCurrentLocation();
-      _addCurrentLocationMarker(
+      moveToCurrentLocation();
+      addCurrentLocationMarker(
           _currentPosition!.latitude, _currentPosition!.longitude);
     } else {
       _getCurrentLocation();
     }
   }
 
-  void _addCurrentLocationMarker(double lat, double lng) {
+  void addCurrentLocationMarker(double lat, double lng) {
     if (_controller != null) {
       final marker = NMarker(
         id: 'current_location',
@@ -233,7 +259,7 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
-  void _moveToCurrentLocation() {
+  void moveToCurrentLocation() {
     if (_controller != null && _currentPosition != null) {
       _controller!.updateCamera(
         NCameraUpdate.withParams(
@@ -249,37 +275,54 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   // URL을 여는 함수
-  Future<void> _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
+  Future<void> launchURL(String url) async {
+    if (await canLaunchUrlString(url)) {
+      await launchUrlString(url);
     } else {
       print('URL을 열 수 없습니다: $url');
     }
   }
 
   // 도서관 정보 표시하는 함수
-  void _showLibraryInfo(String name, String address, String url, String tel) {
+  void showLibraryInfo(NLatLng position) {
+    final libraries = libraryInfoMap[position] ?? [];
+
+    if (libraries.isEmpty) {
+      print('해당 위치에 도서관 정보가 없습니다.');
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(name),
+          title: const Text('도서관 정보'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('주소: $address'),
-              Text('전화번호: $tel'),
-              GestureDetector(
-                onTap: () => _launchURL(url),
-                child: Text(
-                  '웹사이트: $url',
-                  style: const TextStyle(
-                    color: Colors.blue,
-                    decoration: TextDecoration.underline,
-                  ),
+            children: libraries.map((library) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('이름: ${library.name}'),
+                    Text('주소: ${library.address}'),
+                    Text('전화번호: ${library.tel}'),
+                    GestureDetector(
+                      onTap: () => launchURL(library.url),
+                      child: Text(
+                        '웹사이트: ${library.url}',
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                    const Divider(),
+                  ],
                 ),
-              ),
-            ],
+              );
+            }).toList(),
           ),
           actions: [
             TextButton(
@@ -304,7 +347,7 @@ class _LibraryPageState extends State<LibraryPage> {
         children: [
           if (_isSdkInitialized)
             NaverMap(
-              onMapReady: _onMapReady,
+              onMapReady: onMapReady,
               options: NaverMapViewOptions(
                 initialCameraPosition: _initialCameraPosition,
               ),
@@ -315,7 +358,7 @@ class _LibraryPageState extends State<LibraryPage> {
             bottom: 20,
             right: 20,
             child: FloatingActionButton(
-              onPressed: _moveToCurrentLocation,
+              onPressed: moveToCurrentLocation,
               child: const Icon(Icons.my_location),
             ),
           ),
